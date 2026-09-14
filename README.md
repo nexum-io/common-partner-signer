@@ -107,7 +107,7 @@ npm ci && npm start
 
 ## MCP for agents
 
-[`mcp/`](mcp/README.md) is a stdio MCP server exposing the same three operations as tools (`signer_get_address`, `signer_sign_typed_data`, `signer_sign_message`). The MCP process reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment (or a git-ignored `mcp/.env`) and passes it to `createSigner`; the key never goes into `mcp.json`. It is not WalletConnect and not a human wallet.
+[`mcp/`](mcp/README.md) is a stdio MCP server exposing the same three operations as tools (`signer_get_address`, `signer_sign_typed_data`, `signer_sign_message`). The MCP process reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment (or a git-ignored `mcp/.env` as a fallback) and passes it to `createSigner`; the key never goes into `mcp.json`. It is not WalletConnect and not a human wallet. Install and build from the repository root with `npm run setup`, then run `mcp/bin/partner-signer-mcp.sh`.
 
 ## Key handling
 

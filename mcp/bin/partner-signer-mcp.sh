@@ -27,7 +27,7 @@ if [[ -z "${PARTNER_SIGNER_PRIVATE_KEY:-}" && -f "$DOTENV" ]]; then
 fi
 
 if [[ ! -f "$ROOT/dist/main.js" ]]; then
-  echo "partner-signer-mcp: dist/main.js missing — run 'npm ci && npm run build' in $ROOT" >&2
+  echo "partner-signer-mcp: $ROOT/dist/main.js missing — from the repository root run 'npm run setup' (installs the SDK, the example and mcp/, builds SDK dist/ and mcp/dist); after changes in mcp/src: 'npm run build --prefix mcp'" >&2
   exit 1
 fi
 

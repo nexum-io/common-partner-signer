@@ -5,7 +5,7 @@ MCP server for agents (Cursor, Claude Code, …) that exposes `@nexum-io/partner
 | Tool | Input | Output |
 |------|-------|--------|
 | `signer_get_address` | — | `{ address }` |
-| `signer_sign_typed_data` | `{ domain?, types, primaryType, message }` (EIP-712 as JSON; integers may be decimal strings, `0x` hex strings or numbers) | `{ address, signature }` |
+| `signer_sign_typed_data` | `{ domain?, types, primaryType, message }` (EIP-712 as JSON; integer fields and `domain.chainId` may be decimal strings, `0x` hex strings or **safe** numbers ≤ 2^53−1 — larger integers must be strings, unsafe numbers are rejected; `chainId` is optional but, when present, must be a valid uint256) | `{ address, signature }` |
 | `signer_sign_message` | exactly one of `{ message }` (UTF-8) or `{ raw }` (`0x` hex bytes) | `{ address, signature }` |
 
 Errors come back as tool errors (`isError: true`) with a text hint. Key material never appears in results or logs: the key stays inside the signer's closure, stdout is the protocol channel, nothing is printed to stderr.
@@ -21,13 +21,15 @@ Never put the key into `mcp.json` (Cursor stores it in plain text next to the pr
 
 ## Run
 
+From a fresh clone, install and build from the **repository root**: `mcp/` links the SDK via `file:..`, and that link runs the SDK's `prepare` (tsc), which needs the root devDependencies — a bare `npm ci` inside `mcp/` fails with `tsc: command not found`.
+
 ```bash
-cd mcp
-npm ci                 # links the SDK from the repo root (file:..)
-npm run build          # dist/main.js
-cp .env.example .env   # option 2 above — or export the variable instead
-bin/partner-signer-mcp.sh
+npm run setup                # repo root: installs the SDK (+ builds dist/), the example and mcp/, and builds mcp/dist
+cp mcp/.env.example mcp/.env # fallback 2 above — or export the variable in the launching shell instead
+mcp/bin/partner-signer-mcp.sh
 ```
+
+After code changes in `mcp/src`, rebuild with `npm run build --prefix mcp` (or `npm run ci:check --prefix mcp`, which also runs the tests).
 
 `npm run ci:check` = typecheck + build + tests (in-memory transport tests plus real stdio round trips through the launcher: env key, missing key, invalid key, dotenv fallback and precedence — hermetic, an existing `mcp/.env` does not affect them).
 
