@@ -21,19 +21,39 @@ function expectNoTrace(value: unknown, secret: string): void {
   }
 }
 
+/**
+ * viem / noble echo a rejected scalar in decimal — cover that spelling too. Only for scalars whose
+ * decimal form is long enough to be a meaningful needle (a zero key would reduce to "0").
+ */
+function expectNoTraceInAnySpelling(value: unknown, key: string): void {
+  expectNoTrace(value, key);
+  if (!/^0x[0-9a-fA-F]{64}$/.test(key)) return;
+  const decimal = BigInt(key).toString(10);
+  if (decimal.length >= 16) expectNoTrace(value, decimal);
+}
+
+const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug', 'trace'] as const;
+
+function spyOnConsole() {
+  return CONSOLE_METHODS.map((method) => vi.spyOn(console, method).mockImplementation(() => {}));
+}
+
+const INVALID_KEYS: Array<[label: string, value: string]> = [
+  ['empty string', ''],
+  ['missing 0x prefix', 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'],
+  ['too short', '0xabab'],
+  ['too long', `0x${'ab'.repeat(33)}`],
+  ['non-hex characters', `0x${'zz'.repeat(32)}`],
+  ['zero scalar', `0x${'00'.repeat(32)}`],
+  ['outside the curve order', `0x${'ff'.repeat(32)}`],
+];
+
 describe('createSigner — private key never leaks', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it.each([
-    ['empty string', ''],
-    ['missing 0x prefix', 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'],
-    ['too short', '0xabab'],
-    ['too long', `0x${'ab'.repeat(33)}`],
-    ['non-hex characters', `0x${'zz'.repeat(32)}`],
-    ['outside the curve order', `0x${'ff'.repeat(32)}`],
-  ])('rejects %s with InvalidPrivateKeyError that carries no key material', (_label, privateKey) => {
+  it.each(INVALID_KEYS)('rejects %s with InvalidPrivateKeyError that carries no key material', (_label, privateKey) => {
     let caught: unknown;
     try {
       createSigner({ privateKey: privateKey as `0x${string}` });
@@ -43,7 +63,8 @@ describe('createSigner — private key never leaks', () => {
 
     expect(caught).toBeInstanceOf(InvalidPrivateKeyError);
     expect((caught as Error).name).toBe('InvalidPrivateKeyError');
-    if (privateKey.length > 6) expectNoTrace(caught, privateKey);
+    expect((caught as Error).cause).toBeUndefined();
+    if (privateKey) expectNoTraceInAnySpelling(caught, privateKey);
   });
 
   it.each([
@@ -71,13 +92,21 @@ describe('createSigner — private key never leaks', () => {
   });
 
   it('writes nothing to the console while creating and signing', async () => {
-    const spies = (['log', 'info', 'warn', 'error', 'debug', 'trace'] as const).map((method) =>
-      vi.spyOn(console, method).mockImplementation(() => {}),
-    );
+    const spies = spyOnConsole();
 
     const signer = createSigner({ privateKey: TEST_PRIVATE_KEY });
     await signer.signTypedData(TYPED_DATA_FIXTURE);
     await signer.signMessage('hello');
+
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing to the console while rejecting invalid keys', () => {
+    const spies = spyOnConsole();
+
+    for (const [, privateKey] of INVALID_KEYS) {
+      expect(() => createSigner({ privateKey: privateKey as `0x${string}` })).toThrow(InvalidPrivateKeyError);
+    }
 
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   });
@@ -99,6 +128,6 @@ describe('createSigner — private key never leaks', () => {
     }
 
     expect(caught).toBeInstanceOf(Error);
-    expectNoTrace(caught, TEST_PRIVATE_KEY);
+    expectNoTraceInAnySpelling(caught, TEST_PRIVATE_KEY);
   });
 });
