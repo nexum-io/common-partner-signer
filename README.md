@@ -95,6 +95,19 @@ recovered === signer.getAddress(); // true
 const recoveredFromMessage = await recoverMessageAddress({ message: 'hello', signature: messageSignature });
 ```
 
+## Example
+
+[`examples/basic`](examples/basic/README.md) is a runnable reference consumer: the app reads `PARTNER_SIGNER_PRIVATE_KEY` from its `.env`, passes it to `createSigner`, prints the address and verifies both signatures with viem's `recover*` helpers.
+
+From a fresh clone, install from the **repository root** first — the example links the SDK via `file:../..`, and that link runs the SDK's `prepare` (tsc), which needs the root devDependencies:
+
+```bash
+npm run setup                          # repo root: installs the package (+ builds dist/) and the example
+cd examples/basic
+cp .env.example .env                   # then put your key into .env — it is git-ignored
+npm start                              # node --env-file=.env main.mjs
+```
+
 ## Key handling
 
 - Keep the key in your secret store; inject it into the process environment at runtime. Never commit `.env` files with real keys.
@@ -110,9 +123,11 @@ Semantic versioning through git tags (`vX.Y.Z`). Consume a tag, not a branch, in
 
 ```bash
 nvm use            # Node 22 for development; the package supports Node >= 20
-npm ci
-npm run ci:check   # typecheck + test + build
+npm run setup      # npm ci for the package (prepare builds dist/) and for examples/basic (SDK linked via file:../..)
+npm run ci:check   # typecheck + build + test (incl. the example smoke)
 ```
+
+Run `npm run setup` from the repository root before any `npm` command inside `examples/basic`.
 
 Contributor rules for agents and humans: [AGENTS.md](AGENTS.md).
 

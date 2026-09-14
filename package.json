@@ -29,6 +29,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "ci:check": "npm run typecheck && npm run build && npm run test",
+    "setup": "npm ci && npm ci --prefix examples/basic",
     "prepare": "npm run build"
   },
   "dependencies": {
