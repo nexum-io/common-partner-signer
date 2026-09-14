@@ -1,0 +1,41 @@
+{
+  "name": "@nexum-io/partner-signer",
+  "version": "0.0.0",
+  "description": "Node.js SDK for partner backends: sign EIP-712 typed data and messages with your own wallet — createSigner({ privateKey })",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexum-io/common-partner-signer.git"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "ci:check": "npm run typecheck && npm run test && npm run build",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "viem": "^2.56.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

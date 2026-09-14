@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Agent scratch — never commit
+.ai-task/
+.superpowers/
+.ai-sdd/
+.claude/
