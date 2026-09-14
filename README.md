@@ -2,7 +2,7 @@
 
 Thin Node.js SDK for a **partner backend** that needs to sign EIP-712 typed data and EIP-191 messages with **its own wallet** — one operational EOA held by the partner. Nexum never sees, stores, or custodies the key: this package only signs what your service asks it to sign.
 
-**Status:** v1 contract is locked (this README is its source of truth). `createSigner` ships with milestone M1; until then the package exports the contract types only.
+**Status:** v1 — contract locked (this README is its source of truth), `createSigner` implemented on viem local accounts, recover-tested on Node 20 and 22.
 
 ## What it is — and is not
 
@@ -66,9 +66,9 @@ const messageSignature = await signer.signMessage('hello');
 
 | Option | Type | Notes |
 |--------|------|-------|
-| `privateKey` | `` `0x${string}` `` | 32-byte hex, `0x` + 64 hex characters. Anything else throws `InvalidPrivateKeyError` — the error never contains the value. |
+| `privateKey` | `` `0x${string}` `` | 32-byte hex, `0x` + 64 hex characters. Anything else (wrong length, non-hex, not a valid secp256k1 scalar, not a string) throws `InvalidPrivateKeyError` — the error never contains the value and has no `cause`. |
 
-Returns a `PartnerSigner`. The address is derived once, at creation.
+Returns a `PartnerSigner`. The address is derived once, at creation. `InvalidPrivateKeyError` is exported for `instanceof` checks.
 
 ### `signer.getAddress(): Address`
 
