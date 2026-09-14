@@ -105,6 +105,10 @@ cp .env.example .env     # then put your key into .env — it is git-ignored
 npm ci && npm start
 ```
 
+## MCP for agents
+
+[`mcp/`](mcp/README.md) is a stdio MCP server exposing the same three operations as tools (`signer_get_address`, `signer_sign_typed_data`, `signer_sign_message`). The MCP process reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment (or a git-ignored `mcp/.env`) and passes it to `createSigner`; the key never goes into `mcp.json`. It is not WalletConnect and not a human wallet.
+
 ## Key handling
 
 - Keep the key in your secret store; inject it into the process environment at runtime. Never commit `.env` files with real keys.
