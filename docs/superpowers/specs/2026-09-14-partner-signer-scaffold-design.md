@@ -50,6 +50,10 @@ export interface PartnerSigner {
    версия оставила бы дверь для удалённых сайнеров, но это вне v1 (thin SDK).
 2. `signTypedData` / `signMessage` — `Promise<Hex>`, как у viem, чтобы M1 не менял контракт.
 3. Имена типов `CreateSignerOptions` / `PartnerSigner` — не зафиксированы в тикетах, выбраны здесь.
+4. `signMessage(message)` принимает сообщение напрямую, а не конверт `{ message }` как у viem
+   `LocalAccount.signMessage` — партнёру проще писать `signer.signMessage('hello')`. У
+   `signTypedData` конверт viem (`{ domain, types, primaryType, message }`) сохранён, потому что
+   это и есть сам объект EIP-712.
 
 ## Раскладка репозитория
 
@@ -59,7 +63,7 @@ common-partner-signer/
 ├── .gitignore                 # node_modules, dist, .env*, логи, агентские scratch-папки
 ├── .nvmrc                     # 22 — версия для разработки; engines.node >= 20
 ├── AGENTS.md                  # ownership Engineering; не SSO / не Escrow / не HandyMan
-├── README.md                  # M0: назначение + dev-команды; полный контракт — DEV-444
+├── README.md                  # M0: назначение, краткий список locks, dev-команды; партнёрский текст контракта — DEV-444
 ├── package.json               # @nexum-io/partner-signer, "type": "module", exports → dist
 ├── package-lock.json
 ├── tsconfig.json              # strict, NodeNext, noEmit — typecheck src + tests
@@ -67,6 +71,7 @@ common-partner-signer/
 ├── vitest.config.ts           # tests/**/*.test.ts, environment node
 ├── src/index.ts               # публичный вход (типы контракта, см. выше)
 ├── tests/index.test.ts        # stub: модуль загружается, runtime-экспортов нет
+├── tests/contract.types.test.ts # типовые assert'ы контракта (проверяет tsc --noEmit)
 └── docs/superpowers/{specs,plans}/
 ```
 
@@ -79,7 +84,7 @@ common-partner-signer/
 | `type` | `module` | ESM |
 | `engines.node` | `>=20` | lock контракта |
 | `exports["."]` | `{ types: ./dist/index.d.ts, import: ./dist/index.js }` | единственный вход |
-| `files` | `["dist", "README.md"]` | в пакет уходит только собранное |
+| `files` | `["dist", "src", "README.md"]` | собранное + исходники, чтобы sourcemap/declarationMap не висели в установленном пакете |
 | `scripts.build` | `tsc -p tsconfig.build.json` | без бандлера — thin SDK |
 | `scripts.typecheck` | `tsc --noEmit` | src + tests + конфиги |
 | `scripts.test` | `vitest run` | |
@@ -100,9 +105,11 @@ directories, Common commands, Implementation rules, Testing rules, Safety notes,
 
 ## Тестирование M0
 
-- `tests/index.test.ts`: динамический `import('../src/index.js')` резолвится; у модуля
+- `tests/index.test.ts`: динамический `import('../src/index.js')` резолвится и у модуля
   нет runtime-экспортов (в M0 только типы) — это защищает от случайной утечки кода в M0.
-- Типовой контракт проверяется самим `tsc --noEmit` (tests включены в `tsconfig.json`).
+- `tests/contract.types.test.ts`: типовые assert'ы (`expectTypeOf`) в никогда не вызываемой
+  функции — их проверяет `tsc --noEmit` (tests включены в `tsconfig.json`), vitest тут
+  только подтверждает, что файл компилируется и загружается.
 - CI: матрица Node 20 и 22, `npm ci` → `npm run ci:check`.
 
 ## Вне scope M0

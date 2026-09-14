@@ -41,12 +41,7 @@
 import { describe, expect, it } from 'vitest';
 
 describe('@nexum-io/partner-signer entry (M0 scaffold)', () => {
-  it('resolves the public entry module', async () => {
-    const mod = await import('../src/index.js');
-    expect(mod).toBeDefined();
-  });
-
-  it('has no runtime exports yet — M0 is contract-only', async () => {
+  it('resolves the public entry and has no runtime exports yet — M0 is contract-only', async () => {
     const mod = await import('../src/index.js');
     expect(Object.keys(mod)).toEqual([]);
   });
@@ -81,6 +76,7 @@ describe('@nexum-io/partner-signer entry (M0 scaffold)', () => {
   },
   "files": [
     "dist",
+    "src",
     "README.md"
   ],
   "scripts": {
@@ -109,7 +105,7 @@ dist/
 .ai-task/
 .superpowers/
 .ai-sdd/
-.claude/
+.claude/settings.local.json
 ```
 
 `.nvmrc`:
@@ -204,7 +200,7 @@ export {};
 - [ ] **Step 6: Run ci:check to verify it passes**
 
 Run: `npm run ci:check`
-Expected: typecheck OK (no output), vitest `2 passed`, `dist/index.js` + `dist/index.d.ts` emitted.
+Expected: typecheck OK (no output), vitest `1 passed`, `dist/index.js` + `dist/index.d.ts` emitted.
 
 Then: `ls dist` → `index.d.ts index.d.ts.map index.js index.js.map`.
 
@@ -328,7 +324,7 @@ export interface PartnerSigner {
 - [ ] **Step 4: Run ci:check to verify it passes**
 
 Run: `npm run ci:check`
-Expected: typecheck OK, vitest `3 passed` (2 from Task 1 + 1 here), build emits `dist/`. `Object.keys(mod)` in Task 1's test is still `[]` because interfaces are erased.
+Expected: typecheck OK, vitest `2 passed` (1 from Task 1 + 1 here), build emits `dist/`. `Object.keys(mod)` in Task 1's test is still `[]` because interfaces are erased.
 
 Also verify the emitted declaration carries the contract: `grep -c 'PartnerSigner' dist/index.d.ts` → `1` or more.
 
@@ -362,6 +358,9 @@ on:
     branches: [develop, main]
   pull_request:
     branches: [develop, main]
+
+permissions:
+  contents: read
 
 jobs:
   quality:
@@ -507,7 +506,7 @@ npm run ci:check   # typecheck + test + build
 - [ ] **Step 3: Verify docs do not break the package**
 
 Run: `npm run ci:check` (README/AGENTS are not compiled, but the check proves nothing else moved) and `npm pack --dry-run`.
-Expected: ci:check green; pack lists `README.md`, `package.json` and `dist/*` only (no `src/`, `tests/`, `docs/`).
+Expected: ci:check green; pack lists `README.md`, `package.json`, `dist/*` and `src/*` only (no `tests/`, `docs/`, configs).
 
 - [ ] **Step 4: Commit**
 
@@ -537,7 +536,7 @@ rm -rf /tmp/partner-signer-verify && git clone --quiet --branch feature_DEV-443_
 cd /tmp/partner-signer-verify && npm ci --no-audit --no-fund && npm run ci:check && ls dist
 ```
 
-Expected: install OK (prepare builds dist), typecheck OK, `3 passed`, `dist/index.js` + `dist/index.d.ts` present. Use the session scratchpad directory instead of `/tmp` when one is configured.
+Expected: install OK (prepare builds dist), typecheck OK, `2 passed`, `dist/index.js` + `dist/index.d.ts` present. Use the session scratchpad directory instead of `/tmp` when one is configured.
 
 - [ ] **Step 3: Freshness + push**
 

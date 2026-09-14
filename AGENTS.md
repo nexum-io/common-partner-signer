@@ -53,7 +53,7 @@ npm run build        # emit dist/
 ## Safety notes
 
 - Never commit real keys; `.env*` is git-ignored, examples must hold placeholders only.
-- The repository is public — no internal URLs, tokens, or partner identifiers in code, tests, or docs.
+- The repository is public — no internal infrastructure hosts/URLs, tokens, or partner identifiers in code, tests, or docs. Links to the Linear project are fine.
 
 ## Read next
 

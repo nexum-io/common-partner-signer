@@ -11,4 +11,4 @@ dist/
 .ai-task/
 .superpowers/
 .ai-sdd/
-.claude/
+.claude/settings.local.json
