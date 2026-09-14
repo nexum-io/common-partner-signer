@@ -31,7 +31,7 @@ Node ≥ 20, ESM only (`import`, no `require`).
 npm install github:nexum-io/common-partner-signer#v0.1.0
 ```
 
-The version tag lands with milestone M3. Until then use the integration branch: `npm install github:nexum-io/common-partner-signer#develop`.
+Pin a tag (`#vX.Y.Z`), never a branch, in production. Tags are listed at https://github.com/nexum-io/common-partner-signer/tags; changes per version are in [CHANGELOG.md](CHANGELOG.md). npm builds `dist/` on install (the `prepare` script), so no registry publication is needed.
 
 ## Quick start
 
