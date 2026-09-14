@@ -88,7 +88,7 @@ common-partner-signer/
 | `scripts.build` | `tsc -p tsconfig.build.json` | без бандлера — thin SDK |
 | `scripts.typecheck` | `tsc --noEmit` | src + tests + конфиги |
 | `scripts.test` | `vitest run` | |
-| `scripts.ci:check` | `typecheck && test && build` | «репо собирается» — часть готовности |
+| `scripts.ci:check` | `typecheck && build && test` | «репо собирается» — часть готовности; build раньше test, чтобы тесты, идущие через `exports` → `dist`, видели свежую сборку |
 | `scripts.prepare` | `npm run build` | `npm i github:…#vX` собирает dist на установке (M3) |
 | `dependencies.viem` | `^2.56` | lock контракта; в M0 используется только как типы |
 | `devDependencies` | `typescript ^5.9`, `vitest ^3.2`, `@types/node ^20` | `@types/node@20` = нижняя граница engines, чтобы не утекли API Node 22 |

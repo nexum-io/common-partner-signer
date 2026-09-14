@@ -83,7 +83,7 @@ describe('@nexum-io/partner-signer entry (M0 scaffold)', () => {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "ci:check": "npm run typecheck && npm run test && npm run build",
+    "ci:check": "npm run typecheck && npm run build && npm run test",
     "prepare": "npm run build"
   }
 }
@@ -356,8 +356,8 @@ name: CI
 on:
   push:
     branches: [develop, main]
+  # No base filter: stacked PRs (feature → feature) must be checked too.
   pull_request:
-    branches: [develop, main]
 
 permissions:
   contents: read
