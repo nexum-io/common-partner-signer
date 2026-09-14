@@ -58,7 +58,8 @@ npm run build        # emit dist/
 Consumers install by git tag: `npm i github:nexum-io/common-partner-signer#vX.Y.Z` (npm runs `prepare` → `dist/`). To cut a version, on the merged `develop` commit:
 
 ```bash
-# 1. version in package.json + CHANGELOG.md entry land through a normal PR
+# 1. version in package.json AND mcp/package.json (the MCP reports its own version) + CHANGELOG.md entry land through a normal PR;
+#    re-run `npm run setup` so the example/mcp lockfiles pick up the new link version
 # 2. tag the merge commit and push the tag
 git tag -a v0.1.0 -m "v0.1.0" <develop-merge-commit>
 git push origin v0.1.0
