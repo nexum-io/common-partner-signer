@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-describe('@nexum-io/partner-signer entry (M0 scaffold)', () => {
-  it('resolves the public entry and has no runtime exports yet — M0 is contract-only', async () => {
+describe('@nexum-io/partner-signer entry', () => {
+  it('exposes exactly the v1 runtime surface: createSigner', async () => {
     const mod = await import('../src/index.js');
-    expect(Object.keys(mod)).toEqual([]);
+
+    expect(Object.keys(mod).sort()).toEqual(['createSigner']);
+    expect(typeof mod.createSigner).toBe('function');
   });
 });
