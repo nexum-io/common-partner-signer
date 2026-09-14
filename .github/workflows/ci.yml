@@ -21,6 +21,5 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
-      - run: npm ci --prefix examples/basic
+      - run: npm run setup
       - run: npm run ci:check

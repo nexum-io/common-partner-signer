@@ -100,7 +100,9 @@ const recoveredFromMessage = await recoverMessageAddress({ message: 'hello', sig
 [`examples/basic`](examples/basic/README.md) is a runnable reference consumer: the app reads `PARTNER_SIGNER_PRIVATE_KEY` from its `.env`, passes it to `createSigner`, prints the address and verifies both signatures with viem's `recover*` helpers.
 
 ```bash
-cd examples/basic && cp .env.example .env && npm ci && npm start
+cd examples/basic
+cp .env.example .env     # then put your key into .env — it is git-ignored
+npm ci && npm start
 ```
 
 ## Key handling
@@ -118,8 +120,8 @@ Semantic versioning through git tags (`vX.Y.Z`). Consume a tag, not a branch, in
 
 ```bash
 nvm use            # Node 22 for development; the package supports Node >= 20
-npm ci
-npm run ci:check   # typecheck + test + build
+npm run setup      # npm ci for the package and for examples/basic (links the SDK via file:../..)
+npm run ci:check   # typecheck + build + test
 ```
 
 Contributor rules for agents and humans: [AGENTS.md](AGENTS.md).

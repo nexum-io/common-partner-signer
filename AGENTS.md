@@ -22,17 +22,16 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 |------|----------|
 | `src/index.ts` | The only public entry (`exports["."]`) |
 | `tests/` | vitest suites (`*.test.ts`) — type-level contract checks and the example smoke live here too |
-| `examples/basic/` | Reference consumer (own `package.json`, SDK linked via `file:../..`); reads env itself, `npm ci --prefix examples/basic` before tests |
+| `examples/basic/` | Reference consumer (own `package.json`, SDK linked via `file:../..`); reads env itself; installed by `npm run setup` |
 | `dist/` | Build output (`tsc -p tsconfig.build.json`), git-ignored |
 | `docs/superpowers/` | Design specs and implementation plans |
-| `.github/workflows/ci.yml` | `npm ci` + `npm run ci:check` on Node 20 and 22 |
+| `.github/workflows/ci.yml` | `npm run setup` + `npm run ci:check` on Node 20 and 22, on every PR (stacked ones included) |
 
 ## Common commands
 
 ```bash
-npm ci
-npm ci --prefix examples/basic   # links the SDK into the example (needed by tests/example.test.ts)
-npm run ci:check     # typecheck + test + build — the real verify command
+npm run setup        # npm ci + the example's deps (SDK linked via file:../..; needed by tests/example.test.ts)
+npm run ci:check     # typecheck + build + test — the real verify command
 npm run test         # vitest run
 npm run build        # emit dist/
 ```
