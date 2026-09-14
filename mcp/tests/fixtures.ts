@@ -33,9 +33,9 @@ export const TYPED_DATA_JSON = {
   },
 } as const;
 
-/** The same payload as viem expects it (bigint for integer types). */
+/** The same payload as viem expects it (bigint for integer types, chainId included). */
 export const TYPED_DATA_VIEM = {
-  domain: TYPED_DATA_JSON.domain,
+  domain: { ...TYPED_DATA_JSON.domain, chainId: 137n },
   types: TYPED_DATA_JSON.types,
   primaryType: 'Order',
   message: {
