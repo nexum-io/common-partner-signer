@@ -12,10 +12,10 @@ Errors come back as tool errors (`isError: true`) with a text hint. Key material
 
 ## Where the key comes from
 
-The MCP **process** reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment and passes it to `createSigner`. The SDK never touches `process.env`. Two ways to provide it — pick one:
+The MCP **process** reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment and passes it to `createSigner`. The SDK never touches `process.env`. Precedence in `bin/partner-signer-mcp.sh`:
 
-1. **Environment of the launcher.** Export the variable in the shell that starts the MCP client (e.g. the terminal you launch Cursor from).
-2. **`mcp/.env` (git-ignored).** Copy `.env.example` → `.env`; `bin/partner-signer-mcp.sh` loads it into the process environment before starting the server.
+1. **Environment of the launcher** — the variable exported in the shell that starts the MCP client (e.g. the terminal you launch Cursor from) always wins.
+2. **Dotenv fallback** — only when the variable is unset: `mcp/.env` (git-ignored; copy from `.env.example`) or the file named in `PARTNER_SIGNER_DOTENV_FILE`. The file is parsed line by line (`KEY=value`, optional quotes, CRLF tolerated) and is never executed as shell.
 
 Never put the key into `mcp.json` (Cursor stores it in plain text next to the project).
 
@@ -29,7 +29,7 @@ cp .env.example .env   # option 2 above — or export the variable instead
 bin/partner-signer-mcp.sh
 ```
 
-`npm run ci:check` = typecheck + build + tests (in-memory transport tests plus a real stdio round trip through the launcher).
+`npm run ci:check` = typecheck + build + tests (in-memory transport tests plus real stdio round trips through the launcher: env key, missing key, invalid key, dotenv fallback and precedence — hermetic, an existing `mcp/.env` does not affect them).
 
 ## Cursor
 

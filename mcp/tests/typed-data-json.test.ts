@@ -42,6 +42,22 @@ describe('typedDataFromJson — JSON payload → viem typed data', () => {
     expect(() => typedDataFromJson(input)).toThrow(/message\.amount/);
   });
 
+  it.each([
+    ['decimal string', '137'],
+    ['0x hex string', '0x89'],
+    ['number', 137],
+  ])('normalises domain.chainId given as %s to the number 137', (_label, chainId) => {
+    const input = { ...TYPED_DATA_JSON, domain: { ...TYPED_DATA_JSON.domain, chainId } };
+
+    expect((typedDataFromJson(input).domain as { chainId: number }).chainId).toBe(137);
+  });
+
+  it('rejects a non-integer domain.chainId instead of letting viem drop it silently', () => {
+    const input = { ...TYPED_DATA_JSON, domain: { ...TYPED_DATA_JSON.domain, chainId: 'polygon' } };
+
+    expect(() => typedDataFromJson(input)).toThrow(/domain\.chainId/);
+  });
+
   it('passes unknown struct names through so viem reports them', () => {
     const input = { ...TYPED_DATA_JSON, primaryType: 'Missing' };
 

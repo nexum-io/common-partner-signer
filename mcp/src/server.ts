@@ -1,4 +1,7 @@
+import { createRequire } from 'node:module';
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { PartnerSigner } from '@nexum-io/partner-signer';
 import type { Hex } from 'viem';
 import { z } from 'zod';
@@ -15,9 +18,7 @@ export interface PartnerSignerMcpOptions {
 
 type ToolOutput = Record<string, string>;
 
-type ToolResult =
-  | { content: Array<{ type: 'text'; text: string }>; structuredContent: ToolOutput }
-  | { isError: true; content: Array<{ type: 'text'; text: string }> };
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 const hexBytes = z.string().regex(/^0x(?:[0-9a-fA-F]{2})*$/, 'expected 0x-prefixed hex bytes');
 
@@ -46,7 +47,7 @@ const signatureOutput = {
  * Key material never enters tool results; the key stays inside the signer's closure.
  */
 export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOptions): McpServer {
-  const server = new McpServer({ name: 'partner-signer', version: '0.1.0' });
+  const server = new McpServer({ name: 'partner-signer', version });
 
   server.registerTool(
     'signer_get_address',
@@ -55,7 +56,7 @@ export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOpti
       inputSchema: {},
       outputSchema: { address: z.string() },
     },
-    () => run(() => ({ address: getSigner().getAddress() })),
+    () => toToolResult(() => ({ address: getSigner().getAddress() })),
   );
 
   server.registerTool(
@@ -67,7 +68,7 @@ export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOpti
       outputSchema: signatureOutput,
     },
     (input) =>
-      run(async () => {
+      toToolResult(async () => {
         const signer = getSigner();
         const signature = await signer.signTypedData(typedDataFromJson(input));
         return { address: signer.getAddress(), signature };
@@ -86,7 +87,7 @@ export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOpti
       outputSchema: signatureOutput,
     },
     ({ message, raw }) =>
-      run(async () => {
+      toToolResult(async () => {
         if ((message === undefined) === (raw === undefined)) {
           throw new Error('provide exactly one of "message" (UTF-8 string) or "raw" (0x hex bytes)');
         }
@@ -99,7 +100,8 @@ export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOpti
   return server;
 }
 
-async function run(produce: () => ToolOutput | Promise<ToolOutput>): Promise<ToolResult> {
+/** Wrap a producer into an MCP tool result: JSON text + structuredContent, or `isError` with a value-free message. */
+async function toToolResult(produce: () => ToolOutput | Promise<ToolOutput>): Promise<CallToolResult> {
   try {
     const output = await produce();
     return { content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output };

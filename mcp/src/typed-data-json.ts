@@ -29,10 +29,15 @@ export function typedDataFromJson(input: TypedDataJson): TypedDataDefinition {
   return definition as unknown as TypedDataDefinition<TypedData, string>;
 }
 
+/** viem drops a `chainId` that is not number | bigint silently — normalise decimal and 0x strings. */
 function normaliseDomain(domain: Readonly<Record<string, unknown>>): TypedDataDomain {
   const chainId = domain['chainId'];
-  if (typeof chainId === 'string' && DECIMAL.test(chainId)) {
-    return { ...domain, chainId: Number(chainId) } as TypedDataDomain;
+  if (typeof chainId === 'string') {
+    const trimmed = chainId.trim();
+    if (DECIMAL.test(trimmed) || HEX.test(trimmed)) {
+      return { ...domain, chainId: Number(BigInt(trimmed)) } as TypedDataDomain;
+    }
+    throw new TypeError('domain.chainId: expected an integer (decimal string, 0x hex string or number)');
   }
   return domain as TypedDataDomain;
 }
