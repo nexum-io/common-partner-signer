@@ -30,8 +30,8 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 ## Common commands
 
 ```bash
-npm run setup        # npm ci + the example's deps (SDK linked via file:../..; needed by tests/example.test.ts)
-npm run ci:check     # typecheck + build + test — the real verify command
+npm run setup        # root npm ci (prepare builds dist/) + examples/basic npm ci; run this BEFORE any npm command inside examples/basic (the file: link runs the SDK prepare → needs root devDependencies)
+npm run ci:check     # typecheck + build + test (incl. tests/example.test.ts) — the real verify command
 npm run test         # vitest run
 npm run build        # emit dist/
 ```
