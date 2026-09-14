@@ -53,6 +53,21 @@ npm run build        # emit dist/
 - Signing changes must prove `recover(address) === getAddress()` on fixtures (M1) and that the key is absent from logs and serialised errors.
 - `npm run ci:check` must be green before a PR; CI runs it on Node 20 and 22.
 
+## Release
+
+Consumers install by git tag: `npm i github:nexum-io/common-partner-signer#vX.Y.Z` (npm runs `prepare` → `dist/`). To cut a version, on the merged `develop` commit:
+
+```bash
+# 1. version in package.json AND mcp/package.json (the MCP reports its own version) + CHANGELOG.md entry land through a normal PR;
+#    re-run `npm run setup` so the example/mcp lockfiles pick up the new link version
+# 2. tag the merge commit and push the tag
+git tag -a v0.1.0 -m "v0.1.0" <develop-merge-commit>
+git push origin v0.1.0
+# 3. smoke: npm i github:nexum-io/common-partner-signer#v0.1.0 in an empty Node project
+```
+
+Never move a published tag; publish a new version instead.
+
 ## Safety notes
 
 - Never commit real keys; `.env*` is git-ignored, examples must hold placeholders only.

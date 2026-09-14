@@ -1,6 +1,6 @@
 {
   "name": "@nexum-io/partner-signer",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Node.js SDK for partner backends: sign EIP-712 typed data and messages with your own wallet — createSigner({ privateKey })",
   "license": "MIT",
   "type": "module",
@@ -22,7 +22,8 @@
   "files": [
     "dist",
     "src",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
