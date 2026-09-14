@@ -12,3 +12,4 @@ First public release of the v1 contract.
 - Type surface: `CreateSignerOptions`, `PartnerSigner` (viem `TypedDataDefinition` / `SignableMessage` types).
 - Reference consumer `examples/basic` and the `mcp/` stdio server for agents (`signer_get_address`, `signer_sign_typed_data`, `signer_sign_message`) — both outside the package's runtime dependencies.
 - Node ≥ 20, TypeScript ESM, CI on Node 20 and 22.
+- MIT license (`LICENSE` in the package).
