@@ -23,6 +23,7 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 | `src/index.ts` | The only public entry (`exports["."]`) |
 | `tests/` | vitest suites (`*.test.ts`) — type-level contract checks and the example smoke live here too |
 | `examples/basic/` | Reference consumer (own `package.json`, SDK linked via `file:../..`); reads env itself; installed by `npm run setup` |
+| `mcp/` | MCP stdio server for agents (own `package.json`, SDK linked via `file:..`): tools `signer_get_address` / `signer_sign_typed_data` / `signer_sign_message`; key from the MCP host process env; installed by `npm run setup`, checked by the root `ci:check` |
 | `dist/` | Build output (`tsc -p tsconfig.build.json`), git-ignored |
 | `docs/superpowers/` | Design specs and implementation plans |
 | `.github/workflows/ci.yml` | `npm run setup` + `npm run ci:check` on Node 20 and 22, on every PR (stacked ones included) |
@@ -30,8 +31,8 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 ## Common commands
 
 ```bash
-npm run setup        # root npm ci (prepare builds dist/) + examples/basic npm ci; run this BEFORE any npm command inside examples/basic (the file: link runs the SDK prepare → needs root devDependencies)
-npm run ci:check     # typecheck + build + test (incl. tests/example.test.ts) — the real verify command
+npm run setup        # root npm ci (prepare builds dist/) + examples/basic npm ci + mcp npm ci + mcp build; run this from the root BEFORE any npm command inside examples/basic or mcp (their file: links run the SDK prepare → need root devDependencies)
+npm run ci:check     # SDK typecheck + build + test (incl. the example smoke), then mcp typecheck + build + test (incl. stdio through the launcher) — the real verify command
 npm run test         # vitest run
 npm run build        # emit dist/
 ```
@@ -42,7 +43,8 @@ npm run build        # emit dist/
 - Never read `process.env` inside the package. Never log the private key. Never put it into an `Error` (message, cause, serialised fields).
 - No product HTTP calls, no ForwardRequest helper, no mnemonic / HD derivation, no KMS or remote signer, no WalletConnect.
 - No product names in code or types (no Escrow / HandyMan / SSO specifics) — the SDK is product-agnostic.
-- Keep viem as the only runtime dependency.
+- Keep viem as the only runtime dependency of the SDK. MCP-only dependencies (`@modelcontextprotocol/sdk`, `zod`) live in `mcp/package.json`, never in the root.
+- The MCP reads `PARTNER_SIGNER_PRIVATE_KEY` from its own process env and passes it to `createSigner`; tool namespace is `signer_*` (never `wallet_*` — that is `common-wc-sign-tester`); no key in tool results, `mcp.json` examples, or logs; never `console.log` in the stdio server (stdout is the protocol).
 - Relative imports use explicit `.js` extensions (NodeNext ESM).
 
 ## Testing rules

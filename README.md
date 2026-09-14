@@ -108,6 +108,10 @@ cp .env.example .env                   # then put your key into .env — it is g
 npm start                              # node --env-file=.env main.mjs
 ```
 
+## MCP for agents
+
+[`mcp/`](mcp/README.md) is a stdio MCP server exposing the same three operations as tools (`signer_get_address`, `signer_sign_typed_data`, `signer_sign_message`). The MCP process reads `PARTNER_SIGNER_PRIVATE_KEY` from its own environment (or a git-ignored `mcp/.env` as a fallback) and passes it to `createSigner`; the key never goes into `mcp.json`. It is not WalletConnect and not a human wallet. Install and build from the repository root with `npm run setup`, then run `mcp/bin/partner-signer-mcp.sh`.
+
 ## Key handling
 
 - Keep the key in your secret store; inject it into the process environment at runtime. Never commit `.env` files with real keys.
@@ -123,11 +127,11 @@ Semantic versioning through git tags (`vX.Y.Z`). Consume a tag, not a branch, in
 
 ```bash
 nvm use            # Node 22 for development; the package supports Node >= 20
-npm run setup      # npm ci for the package (prepare builds dist/) and for examples/basic (SDK linked via file:../..)
-npm run ci:check   # typecheck + build + test (incl. the example smoke)
+npm run setup      # npm ci for the package (prepare builds dist/), examples/basic and mcp (SDK linked via file:), then builds mcp/dist
+npm run ci:check   # SDK: typecheck + build + test (incl. the example smoke); then mcp: typecheck + build + test (incl. stdio through the launcher)
 ```
 
-Run `npm run setup` from the repository root before any `npm` command inside `examples/basic`.
+Run `npm run setup` from the repository root before any `npm` command inside `examples/basic` or `mcp`.
 
 Contributor rules for agents and humans: [AGENTS.md](AGENTS.md).
 
