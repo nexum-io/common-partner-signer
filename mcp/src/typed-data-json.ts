@@ -1,6 +1,6 @@
 import type { TypedData, TypedDataDefinition, TypedDataDomain } from 'viem';
 
-/** EIP-712 payload as it arrives over JSON (tool arguments): integers may be decimal strings or numbers. */
+/** EIP-712 payload as it arrives over JSON (tool arguments): integers may be decimal strings, 0x hex strings or safe numbers. */
 export interface TypedDataJson {
   readonly domain?: Readonly<Record<string, unknown>> | undefined;
   readonly types: Readonly<Record<string, ReadonlyArray<{ readonly name: string; readonly type: string }>>>;
@@ -12,10 +12,15 @@ const INTEGER_TYPE = /^u?int(\d+)?$/;
 const ARRAY_TYPE = /^(.*)\[\d*\]$/;
 const DECIMAL = /^-?\d+$/;
 const HEX = /^0x[0-9a-fA-F]+$/;
+const UINT256_MAX = (1n << 256n) - 1n;
+
+const INTEGER_HINT = 'expected an integer as a decimal string, 0x hex string or safe number (|n| <= 2^53-1)';
 
 /**
- * Convert a JSON typed-data payload into what viem's `signTypedData` expects:
- * every integer-typed field (recursively, through structs and arrays) becomes a `bigint`.
+ * Convert a JSON typed-data payload into what viem's `signTypedData` expects: every integer-typed
+ * field (recursively, through structs and arrays) and `domain.chainId` become exact `bigint`s.
+ * Strings are converted without an intermediate `number`; JSON numbers must be safe integers —
+ * anything larger has already lost precision in JSON and is rejected with a hint to use a string.
  * Unknown struct names are passed through so viem reports them with its own error.
  */
 export function typedDataFromJson(input: TypedDataJson): TypedDataDefinition {
@@ -29,17 +34,20 @@ export function typedDataFromJson(input: TypedDataJson): TypedDataDefinition {
   return definition as unknown as TypedDataDefinition<TypedData, string>;
 }
 
-/** viem drops a `chainId` that is not number | bigint silently — normalise decimal and 0x strings. */
+/**
+ * `chainId` is optional, but when it is present it must be a valid uint256 — viem silently drops
+ * a chainId of an unexpected type from the inferred EIP712Domain, which would sign a different domain.
+ */
 function normaliseDomain(domain: Readonly<Record<string, unknown>>): TypedDataDomain {
-  const chainId = domain['chainId'];
-  if (typeof chainId === 'string') {
-    const trimmed = chainId.trim();
-    if (DECIMAL.test(trimmed) || HEX.test(trimmed)) {
-      return { ...domain, chainId: Number(BigInt(trimmed)) } as TypedDataDomain;
-    }
-    throw new TypeError('domain.chainId: expected an integer (decimal string, 0x hex string or number)');
+  if (!('chainId' in domain) || domain['chainId'] === undefined) {
+    const { chainId: _absent, ...rest } = domain;
+    return rest as TypedDataDomain;
   }
-  return domain as TypedDataDomain;
+  const chainId = toBigInt(domain['chainId'], 'domain.chainId');
+  if (chainId < 0n || chainId > UINT256_MAX) {
+    throw new TypeError('domain.chainId: expected a non-negative integer within uint256 (0 .. 2^256-1)');
+  }
+  return { ...domain, chainId } as TypedDataDomain;
 }
 
 function convertStruct(
@@ -72,12 +80,20 @@ function convertValue(types: TypedDataJson['types'], type: string, value: unknow
   return value;
 }
 
+/** Exact conversion; the error names the field and the value's kind (a number is echoed, arbitrary strings/objects are not). */
 function toBigInt(value: unknown, path: string): bigint {
   if (typeof value === 'bigint') return value;
-  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value);
+  if (typeof value === 'number') {
+    if (Number.isSafeInteger(value)) return BigInt(value);
+    throw new TypeError(
+      `${path}: ${String(value)} is not a safe integer (|n| <= 2^53-1); pass large integers as a decimal or 0x hex string`,
+    );
+  }
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (DECIMAL.test(trimmed) || HEX.test(trimmed)) return BigInt(trimmed);
+    throw new TypeError(`${path}: ${INTEGER_HINT}, got a non-numeric string`);
   }
-  throw new TypeError(`${path}: expected an integer (decimal string, 0x hex string or number) for an integer-typed field`);
+  const kind = value === null ? 'null' : Array.isArray(value) ? 'an array' : `a ${typeof value}`;
+  throw new TypeError(`${path}: ${INTEGER_HINT}, got ${kind}`);
 }

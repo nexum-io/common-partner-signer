@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "ci:check": "npm run typecheck && npm run build && npm run test && npm run ci:check --prefix mcp",
-    "setup": "npm ci && npm ci --prefix examples/basic && npm ci --prefix mcp",
+    "setup": "npm ci && npm ci --prefix examples/basic && npm ci --prefix mcp && npm run build --prefix mcp",
     "prepare": "npm run build"
   },
   "dependencies": {

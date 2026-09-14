@@ -31,8 +31,8 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 ## Common commands
 
 ```bash
-npm run setup        # npm ci for the package, examples/basic and mcp (SDK linked via file:)
-npm run ci:check     # SDK typecheck + build + test, then the MCP ci:check — the real verify command
+npm run setup        # root npm ci (prepare builds dist/) + examples/basic npm ci + mcp npm ci + mcp build; run this from the root BEFORE any npm command inside examples/basic or mcp (their file: links run the SDK prepare → need root devDependencies)
+npm run ci:check     # SDK typecheck + build + test (incl. the example smoke), then mcp typecheck + build + test (incl. stdio through the launcher) — the real verify command
 npm run test         # vitest run
 npm run build        # emit dist/
 ```

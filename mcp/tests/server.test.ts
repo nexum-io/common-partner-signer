@@ -151,4 +151,172 @@ describe('partner-signer MCP server', () => {
     expect(text(result)).toContain('InvalidPrivateKeyError');
     expect(JSON.stringify(result).toLowerCase()).not.toContain('deadbeef');
   });
+
+  describe('integer precision and chainId validation (regressions)', () => {
+    // Independent reference: exact bigint literals, never produced by typedDataFromJson.
+    const BIG = 9007199254740993n; // 2^53 + 1
+    const UINT256_MAX = (1n << 256n) - 1n;
+    const types = {
+      Item: [
+        { name: 'sku', type: 'string' },
+        { name: 'qty', type: 'uint256' },
+      ],
+      Order: [
+        { name: 'items', type: 'Item[]' },
+        { name: 'amount', type: 'uint256' },
+        { name: 'nonce', type: 'uint64' },
+      ],
+    } as const;
+    const referenceMessage = {
+      items: [
+        { sku: 'A', qty: BIG },
+        { sku: 'B', qty: 2n },
+      ],
+      amount: BIG,
+      nonce: BIG,
+    };
+    const jsonMessage = {
+      items: [
+        { sku: 'A', qty: '9007199254740993' },
+        { sku: 'B', qty: 2 },
+      ],
+      amount: '9007199254740993',
+      nonce: '0x20000000000001',
+    };
+    const domainBase = { name: 'Precision', version: '1' };
+
+    async function signWithChainId(client: Client, chainId: unknown) {
+      return call(client, 'signer_sign_typed_data', {
+        domain: { ...domainBase, chainId },
+        types,
+        primaryType: 'Order',
+        message: jsonMessage,
+      });
+    }
+
+    it.each([
+      ['decimal string', '9007199254740993'],
+      ['0x hex string', '0x20000000000001'],
+    ])('signs chainId %s beyond 2^53 exactly — recover matches only the exact chainId', async (_label, chainId) => {
+      const client = await connect(withKey);
+
+      const result = await signWithChainId(client, chainId);
+
+      expect(result.isError, text(result)).toBeFalsy();
+      const { address, signature } = result.structuredContent as Signed;
+      const exact = await recoverTypedDataAddress({
+        domain: { ...domainBase, chainId: BIG },
+        types,
+        primaryType: 'Order',
+        message: referenceMessage,
+        signature,
+      });
+      const rounded = await recoverTypedDataAddress({
+        domain: { ...domainBase, chainId: 9007199254740992n },
+        types,
+        primaryType: 'Order',
+        message: referenceMessage,
+        signature,
+      });
+      expect(exact).toBe(address);
+      expect(rounded).not.toBe(address);
+    });
+
+    it('signs a domain without chainId (chainId stays optional)', async () => {
+      const client = await connect(withKey);
+
+      const result = await call(client, 'signer_sign_typed_data', {
+        domain: domainBase,
+        types,
+        primaryType: 'Order',
+        message: jsonMessage,
+      });
+
+      expect(result.isError, text(result)).toBeFalsy();
+      const { address, signature } = result.structuredContent as Signed;
+      const recovered = await recoverTypedDataAddress({
+        domain: domainBase,
+        types,
+        primaryType: 'Order',
+        message: referenceMessage,
+        signature,
+      });
+      expect(recovered).toBe(address);
+    });
+
+    it('rejects an unsafe JSON number in an integer field with isError and no signature, then keeps serving', async () => {
+      const client = await connect(withKey);
+
+      const rejected = await call(client, 'signer_sign_typed_data', {
+        domain: { ...domainBase, chainId: 137 },
+        types,
+        primaryType: 'Order',
+        message: { ...jsonMessage, amount: 9007199254740993 },
+      });
+
+      expect(rejected.isError).toBe(true);
+      expect(rejected.structuredContent).toBeUndefined();
+      expect(text(rejected)).toMatch(/message\.amount/);
+      expect(text(rejected)).not.toContain('signature');
+
+      const next = await signWithChainId(client, 137);
+      expect(next.isError, text(next)).toBeFalsy();
+      expect((next.structuredContent as Signed).signature).toMatch(/^0x[0-9a-f]{130}$/);
+    });
+
+    it.each([
+      ['true', true],
+      ['null', null],
+      ['an object', {}],
+      ['an array', []],
+      ['a non-numeric string', 'polygon'],
+      ['a fractional number', 1.5],
+      ['a negative number', -1],
+      ['an unsafe number (2^53)', 9007199254740992],
+      ['uint256 maximum + 1', (UINT256_MAX + 1n).toString(10)],
+    ])('rejects chainId %s with isError, no signature and no key material, then keeps serving', async (_label, chainId) => {
+      const client = await connect(withKey);
+
+      const rejected = await signWithChainId(client, chainId);
+
+      expect(rejected.isError).toBe(true);
+      expect(rejected.structuredContent).toBeUndefined();
+      expect(text(rejected)).toMatch(/domain\.chainId/);
+      expect(JSON.stringify(rejected).toLowerCase()).not.toContain(TEST_PRIVATE_KEY.slice(2).toLowerCase());
+
+      const next = await signWithChainId(client, '137');
+      expect(next.isError, text(next)).toBeFalsy();
+    });
+
+    it('keeps the uint256 maximum exact in a message field and rejects maximum + 1', async () => {
+      const client = await connect(withKey);
+      const max = UINT256_MAX.toString(10);
+
+      const ok = await call(client, 'signer_sign_typed_data', {
+        domain: { ...domainBase, chainId: '137' },
+        types,
+        primaryType: 'Order',
+        message: { ...jsonMessage, amount: max },
+      });
+      expect(ok.isError, text(ok)).toBeFalsy();
+      const { address, signature } = ok.structuredContent as Signed;
+      const recovered = await recoverTypedDataAddress({
+        domain: { ...domainBase, chainId: 137n },
+        types,
+        primaryType: 'Order',
+        message: { ...referenceMessage, amount: UINT256_MAX },
+        signature,
+      });
+      expect(recovered).toBe(address);
+
+      const tooBig = await call(client, 'signer_sign_typed_data', {
+        domain: { ...domainBase, chainId: '137' },
+        types,
+        primaryType: 'Order',
+        message: { ...jsonMessage, amount: (UINT256_MAX + 1n).toString(10) },
+      });
+      expect(tooBig.isError).toBe(true);
+      expect(tooBig.structuredContent).toBeUndefined();
+    });
+  });
 });

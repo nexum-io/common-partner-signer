@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { recoverMessageAddress } from 'viem';
+import { recoverMessageAddress, recoverTypedDataAddress } from 'viem';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { TEST_ADDRESS, TEST_PRIVATE_KEY } from './fixtures.js';
@@ -114,6 +114,46 @@ describe('bin/partner-signer-mcp.sh — real stdio round trip (requires `npm run
 
     expect(result.structuredContent).toEqual({ address: TEST_ADDRESS });
     expect(result.structuredContent).not.toEqual({ address: OTHER_ADDRESS });
+  });
+
+  it('signs typed data with a chainId beyond 2^53 exactly over stdio and rejects an invalid chainId without dying', async () => {
+    const client = await connectOverStdio({ PARTNER_SIGNER_PRIVATE_KEY: TEST_PRIVATE_KEY });
+    const BIG = 9007199254740993n; // 2^53 + 1, independent reference
+    const types = { Ping: [{ name: 'nonce', type: 'uint256' }] } as const;
+
+    const signed = (await client.callTool({
+      name: 'signer_sign_typed_data',
+      arguments: { domain: { name: 'Stdio', version: '1', chainId: '9007199254740993' }, types, primaryType: 'Ping', message: { nonce: '9007199254740993' } },
+    })) as CallToolResult;
+    expect(signed.isError, text(signed)).toBeFalsy();
+    const { address, signature } = signed.structuredContent as { address: string; signature: `0x${string}` };
+    const exact = await recoverTypedDataAddress({
+      domain: { name: 'Stdio', version: '1', chainId: BIG },
+      types,
+      primaryType: 'Ping',
+      message: { nonce: BIG },
+      signature,
+    });
+    const rounded = await recoverTypedDataAddress({
+      domain: { name: 'Stdio', version: '1', chainId: 9007199254740992n },
+      types,
+      primaryType: 'Ping',
+      message: { nonce: 9007199254740992n },
+      signature,
+    });
+    expect(exact).toBe(address);
+    expect(rounded).not.toBe(address);
+
+    const rejected = (await client.callTool({
+      name: 'signer_sign_typed_data',
+      arguments: { domain: { name: 'Stdio', version: '1', chainId: true }, types, primaryType: 'Ping', message: { nonce: 1 } },
+    })) as CallToolResult;
+    expect(rejected.isError).toBe(true);
+    expect(rejected.structuredContent).toBeUndefined();
+    expect(text(rejected)).toMatch(/domain\.chainId/);
+
+    const again = await getAddress(client);
+    expect(again.structuredContent).toEqual({ address: TEST_ADDRESS });
   });
 
   it('does not execute the dotenv file as shell', async () => {

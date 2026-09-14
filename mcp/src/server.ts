@@ -26,14 +26,18 @@ const typedDataInput = {
   domain: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe('EIP-712 domain: name, version, chainId, verifyingContract, salt (all optional)'),
+    .describe(
+      'EIP-712 domain: name, version, chainId, verifyingContract, salt (all optional). chainId, when present, must be a non-negative uint256: decimal string, 0x hex string or safe number',
+    ),
   types: z
     .record(z.string(), z.array(z.object({ name: z.string(), type: z.string() })))
     .describe('EIP-712 type definitions, e.g. { Order: [{ name: "amount", type: "uint256" }] }'),
   primaryType: z.string().describe('Name of the struct in `types` that `message` instantiates'),
   message: z
     .record(z.string(), z.unknown())
-    .describe('The struct to sign. Integer fields may be decimal strings, 0x hex strings or numbers'),
+    .describe(
+      'The struct to sign. Integer fields may be decimal strings, 0x hex strings or safe numbers (|n| <= 2^53-1); larger integers must be strings',
+    ),
 };
 
 const signatureOutput = {
@@ -63,7 +67,7 @@ export function createPartnerSignerMcpServer({ getSigner }: PartnerSignerMcpOpti
     'signer_sign_typed_data',
     {
       description:
-        'Sign EIP-712 typed data with the partner wallet. Pass domain, types, primaryType and message as JSON; integers may be decimal strings.',
+        'Sign EIP-712 typed data with the partner wallet. Pass domain, types, primaryType and message as JSON; integers beyond 2^53-1 must be decimal or 0x hex strings (JSON numbers lose precision).',
       inputSchema: typedDataInput,
       outputSchema: signatureOutput,
     },
