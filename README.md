@@ -95,6 +95,14 @@ recovered === signer.getAddress(); // true
 const recoveredFromMessage = await recoverMessageAddress({ message: 'hello', signature: messageSignature });
 ```
 
+## Example
+
+[`examples/basic`](examples/basic/README.md) is a runnable reference consumer: the app reads `PARTNER_SIGNER_PRIVATE_KEY` from its `.env`, passes it to `createSigner`, prints the address and verifies both signatures with viem's `recover*` helpers.
+
+```bash
+cd examples/basic && cp .env.example .env && npm ci && npm start
+```
+
 ## Key handling
 
 - Keep the key in your secret store; inject it into the process environment at runtime. Never commit `.env` files with real keys.
