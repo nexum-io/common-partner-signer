@@ -25,7 +25,6 @@ TypeScript (ESM, `NodeNext`, strict), viem, vitest, Node ≥ 20. No bundler, no 
 | `examples/basic/` | Reference consumer (own `package.json`, SDK linked via `file:../..`); reads env itself; installed by `npm run setup` |
 | `mcp/` | MCP stdio server for agents (own `package.json`, SDK linked via `file:..`): tools `signer_get_address` / `signer_sign_typed_data` / `signer_sign_message`; key from the MCP host process env; installed by `npm run setup`, checked by the root `ci:check` |
 | `dist/` | Build output (`tsc -p tsconfig.build.json`), git-ignored |
-| `docs/superpowers/` | Design specs and implementation plans |
 | `.github/workflows/ci.yml` | `npm run setup` + `npm run ci:check` on Node 20 and 22, on every PR (stacked ones included) |
 
 ## Common commands
@@ -78,4 +77,3 @@ Never move a published tag; publish a new version instead.
 | Topic | Doc |
 |-------|-----|
 | Contract v1 for partners | [README.md](README.md) |
-| M0 design | [docs/superpowers/specs/2026-09-14-partner-signer-scaffold-design.md](docs/superpowers/specs/2026-09-14-partner-signer-scaffold-design.md) |
